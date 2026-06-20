@@ -58,7 +58,7 @@ A few things in here that go beyond a typical tutorial project, worth a look if 
 ## Getting Started
 
 ```bash
-git clone https://github.com/<your-username>/next-anime.git
+git clone https://github.com/ph3m/next-anime.git
 cd next-anime
 npm install
 cp .env.example .env.local   # optional — only needed for canonical/OG URLs
