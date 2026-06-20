@@ -1,0 +1,378 @@
+"use client";
+import { useState, useRef, useEffect, Suspense } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import type { AniListMedia } from "@/lib/anilist";
+import { GENRES_COLS, THEMES_COLS, TYPES } from "@/lib/constants";
+
+// ── Dropdown panel ─────────────────────────────────────────────────────────
+function DropdownPanel({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
+  return (
+    <div style={{
+      position: "absolute", top: "calc(100% + 8px)", left: 0,
+      background: "#18181f", border: "1px solid var(--border)",
+      borderRadius: 10, boxShadow: "0 16px 48px rgba(0,0,0,0.6)",
+      padding: "16px 20px", zIndex: 200,
+      minWidth: wide ? 640 : 160,
+      animation: "fadeIn 0.15s ease",
+    }}>
+      {children}
+    </div>
+  );
+}
+
+// ── Nav item with optional dropdown ───────────────────────────────────────
+function NavItem({
+  label, href, dropdown, active = false,
+}: {
+  label: string;
+  href?: string;
+  dropdown?: React.ReactNode;
+  active?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
+
+  const highlighted = open || active;
+
+  const inner = (
+    <button
+      onClick={() => dropdown && setOpen(o => !o)}
+      style={{
+        background: highlighted ? (active && !open ? "rgba(var(--accent-rgb), 0.14)" : "rgba(255,255,255,0.06)") : "none",
+        border: highlighted ? `1px solid ${active && !open ? "rgba(var(--accent-rgb), 0.35)" : "rgba(255,255,255,0.15)"}` : "1px solid transparent",
+        borderRadius: 6,
+        color: active ? "var(--accent2)" : "var(--text)",
+        cursor: "pointer",
+        fontSize: 14,
+        fontWeight: 500,
+        padding: "6px 10px",
+        display: "flex", alignItems: "center", gap: 4,
+        transition: "background 0.15s, border-color 0.15s",
+        whiteSpace: "nowrap",
+      }}
+      onMouseEnter={e => { if (!highlighted) (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.04)"; }}
+      onMouseLeave={e => { if (!highlighted) (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+    >
+      {label}
+      {dropdown && (
+        <svg width="11" height="11" viewBox="0 0 10 10" fill="none" style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "" }}>
+          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      )}
+    </button>
+  );
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      {href && !dropdown ? <Link href={href}>{inner}</Link> : inner}
+      {open && dropdown && <DropdownPanel wide={label !== "Types" && !!dropdown}>{dropdown}</DropdownPanel>}
+    </div>
+  );
+}
+
+// ── Column dropdown list (for Types) ──────────────────────────────────────
+function TypesDropdown({ activeType }: { activeType: string }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {TYPES.map(t => {
+        const isSelected = activeType.toLowerCase() === t.toLowerCase();
+        return (
+          <Link key={t} href={`/browse?type=${encodeURIComponent(t)}`}>
+            <div style={{
+              padding: "7px 12px", borderRadius: 6, fontSize: 14,
+              color: isSelected ? "var(--accent2)" : "var(--text-muted)",
+              fontWeight: isSelected ? 700 : 400,
+              cursor: "pointer", transition: "all 0.12s",
+              display: "flex", alignItems: "center", gap: 6,
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.06)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
+            >
+              {isSelected && <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)" }} />}
+              {t}
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Multi-column dropdown (Genres / Themes) ────────────────────────────────
+function MultiColDropdown({ cols, viewAllLabel, viewAllHref, paramName, activeValue }: {
+  cols: string[][];
+  viewAllLabel: string;
+  viewAllHref: string;
+  paramName: "genre" | "theme";
+  activeValue: string;
+}) {
+  return (
+    <div>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length}, 1fr)`, gap: "2px 32px" }}>
+        {cols.map((col, ci) => (
+          <div key={ci}>
+            {col.map(item => {
+              const isSelected = activeValue.toLowerCase() === item.toLowerCase();
+              return (
+                <Link key={item} href={`/browse?${paramName}=${encodeURIComponent(item)}`}>
+                  <div style={{
+                    padding: "6px 4px", fontSize: 14,
+                    color: isSelected ? "var(--accent2)" : "var(--text-muted)",
+                    fontWeight: isSelected ? 700 : 400,
+                    cursor: "pointer",
+                    borderRadius: 4, transition: "color 0.12s",
+                    display: "flex", alignItems: "center", gap: 6,
+                  }}
+                    onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.color = "#fff"; }}
+                    onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.color = "var(--text-muted)"; }}
+                  >
+                    {isSelected && <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />}
+                    {item}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      <div style={{ borderTop: "1px solid var(--border)", marginTop: 12, paddingTop: 10 }}>
+        <Link href={viewAllHref}>
+          <span style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, cursor: "pointer" }}>
+            {viewAllLabel} →
+          </span>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ── Search box with live suggestions ───────────────────────────────────────
+function SearchBox() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get("q") || "";
+
+  const [query, setQuery] = useState(urlQuery);
+  const [suggestions, setSuggestions] = useState<AniListMedia[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchingSuggestions, setSearchingSuggestions] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Keep input synced if the URL query changes externally (e.g. back button)
+  useEffect(() => { setQuery(urlQuery); }, [urlQuery]);
+
+  // Debounced live suggestions
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    debounceRef.current = setTimeout(() => {
+      setSearchingSuggestions(true);
+      fetch(`/api/anilist?q=${encodeURIComponent(trimmed)}`)
+        .then(r => r.json())
+        .then(data => {
+          setSuggestions((data.media || []).slice(0, 6));
+          setShowSuggestions(true);
+        })
+        .finally(() => setSearchingSuggestions(false));
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query]);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setShowSuggestions(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, []);
+
+  function goToResults(q: string) {
+    setShowSuggestions(false);
+    if (q.trim()) router.push(`/browse?q=${encodeURIComponent(q.trim())}`);
+    else router.push("/browse");
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    goToResults(query);
+  }
+
+  function handleSelect(anime: AniListMedia) {
+    setShowSuggestions(false);
+    setQuery("");
+    router.push(`/anime/${anime.id}`);
+  }
+
+  return (
+    <div ref={wrapRef} style={{ position: "relative", width: 280, flexShrink: 0 }}>
+      <form onSubmit={handleSubmit}>
+        <svg style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-dim)", pointerEvents: "none" }}
+          width="15" height="15" viewBox="0 0 20 20" fill="none">
+          <circle cx="9" cy="9" r="6.5" stroke="currentColor" strokeWidth="1.8"/>
+          <path d="M14.5 14.5L18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+        </svg>
+        <input
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onFocus={() => { if (suggestions.length) setShowSuggestions(true); }}
+          placeholder="Search anime..."
+          style={{
+            width: "100%", padding: "8px 14px 8px 36px",
+            background: "var(--surface2)", border: "1px solid var(--border)",
+            borderRadius: 8, color: "var(--text)", fontSize: 14, outline: "none",
+            transition: "border-color 0.2s",
+          }}
+          onFocusCapture={e => (e.target.style.borderColor = "var(--accent)")}
+          onBlurCapture={e => (e.target.style.borderColor = "var(--border)")}
+        />
+      </form>
+
+      {/* Suggestions dropdown */}
+      {showSuggestions && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0,
+          background: "#18181f", border: "1px solid var(--border)",
+          borderRadius: 10, boxShadow: "0 16px 48px rgba(0,0,0,0.6)",
+          zIndex: 200, overflow: "hidden", animation: "fadeIn 0.15s ease",
+        }}>
+          {searchingSuggestions ? (
+            <div style={{ padding: "16px", fontSize: 13, color: "var(--text-muted)" }}>Searching…</div>
+          ) : suggestions.length === 0 ? (
+            <div style={{ padding: "16px", fontSize: 13, color: "var(--text-muted)" }}>No matches found.</div>
+          ) : (
+            <>
+              {suggestions.map(a => {
+                const t = a.title.english || a.title.romaji;
+                return (
+                  <div key={a.id} onClick={() => handleSelect(a)}
+                    style={{ display: "flex", gap: 10, padding: "9px 12px", cursor: "pointer", alignItems: "center", transition: "background 0.12s" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <img src={a.coverImage.large} alt={t} style={{ width: 32, height: 44, objectFit: "cover", borderRadius: 4, flexShrink: 0, background: "var(--bg2)" }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t}</p>
+                      <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{a.seasonYear || ""} {a.format ? `· ${a.format}` : ""}</p>
+                    </div>
+                  </div>
+                );
+              })}
+              <div onClick={() => goToResults(query)} style={{
+                padding: "10px 12px", fontSize: 12, fontWeight: 600, color: "var(--accent)",
+                cursor: "pointer", borderTop: "1px solid var(--border)", textAlign: "center",
+              }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+              >
+                See all results for &ldquo;{query}&rdquo;
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Inner navbar (needs Suspense for useSearchParams) ──────────────────────
+function NavbarInner() {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const onBrowse = pathname === "/browse";
+  const onSchedule = pathname === "/schedule";
+
+  const urlGenre = onBrowse ? searchParams.get("genre") || "" : "";
+  const urlType = onBrowse ? searchParams.get("type") || "" : "";
+  const urlTheme = onBrowse ? searchParams.get("theme") || "" : "";
+
+  const allGenres = GENRES_COLS.flat();
+  const allThemes = THEMES_COLS.flat();
+
+  const matchedGenre = allGenres.find(g => g.toLowerCase() === urlGenre.toLowerCase());
+  const matchedTheme = allThemes.find(t => t.toLowerCase() === urlTheme.toLowerCase());
+  const matchedType = TYPES.find(t => t.toLowerCase() === urlType.toLowerCase());
+
+  return (
+    <header style={{
+      position: "sticky", top: 0, zIndex: 100,
+      background: "rgba(13,13,13,0.97)",
+      backdropFilter: "blur(14px)",
+      borderBottom: "1px solid var(--border)",
+      height: "var(--nav-height)",
+      display: "flex", alignItems: "center",
+      padding: "0 32px", gap: 4,
+    }}>
+      {/* Logo */}
+      <Link href="/" aria-label="Next Anime home" style={{ display: "flex", alignItems: "center", marginRight: 20, flexShrink: 0, textDecoration: "none" }}>
+        <Image src="/logo-full.png" alt="Next Anime" width={114} height={34} priority style={{ height: 100, width: "auto", objectFit: "contain" }} />
+      </Link>
+
+      {/* Nav links — flex:1 just absorbs leftover space, pushing search/avatar right */}
+      <nav style={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
+        <NavItem label="Home" href="/" active={pathname === "/"} />
+        <NavItem label="Browse" href="/browse" active={onBrowse && !matchedType && !matchedGenre && !matchedTheme} />
+        <NavItem label="Schedule" href="/schedule" active={onSchedule} />
+        <NavItem label="Types" active={!!matchedType} dropdown={<TypesDropdown activeType={urlType} />} />
+        <NavItem
+          label={matchedGenre || "Genres"}
+          active={!!matchedGenre}
+          dropdown={<MultiColDropdown cols={GENRES_COLS} viewAllLabel="View all genres" viewAllHref="/browse" paramName="genre" activeValue={urlGenre} />}
+        />
+        <NavItem
+          label={matchedTheme || "Themes"}
+          active={!!matchedTheme}
+          dropdown={<MultiColDropdown cols={THEMES_COLS} viewAllLabel="View all themes" viewAllHref="/browse" paramName="theme" activeValue={urlTheme} />}
+        />
+      </nav>
+
+      {/* Search — now sits right next to the avatar */}
+      <SearchBox />
+
+      {/* User avatar */}
+      <div style={{
+        width: 34, height: 34, borderRadius: "50%",
+        background: "var(--surface3)", border: "2px solid var(--border)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        cursor: "pointer", flexShrink: 0, marginLeft: 12,
+      }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.8"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+        </svg>
+      </div>
+    </header>
+  );
+}
+
+// ── Main Navbar export (wraps in Suspense so it's safe on any page) ────────
+export default function Navbar() {
+  return (
+    <Suspense fallback={
+      <header style={{
+        position: "sticky", top: 0, zIndex: 100,
+        background: "rgba(13,13,20,0.97)", backdropFilter: "blur(14px)",
+        borderBottom: "1px solid var(--border)", height: "var(--nav-height)",
+      }} />
+    }>
+      <NavbarInner />
+    </Suspense>
+  );
+}
