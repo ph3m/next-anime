@@ -35,24 +35,154 @@ function AnimeCard({ anime, size = "md" }: { anime: AniListMedia; size?: "sm" | 
 }
 
 // ─── Hero Banner ──────────────────────────────────────────────────────────────
+const HERO_AUTOPLAY_MS = 6000;
+
 function HeroBanner({ media }: { media: AniListMedia[] }) {
-  const [active, setActive] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const heroes = media.slice(0, 5).filter(m => m.bannerImage || m.coverImage.extraLarge);
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [tabHidden, setTabHidden] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [cycleKey, setCycleKey] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const count = heroes.length;
+  const goTo = (i: number) => {
+    setActive(((i % count) + count) % count);
+    setCycleKey(k => k + 1);
+  };
+  const next = () => goTo(active + 1);
+  const prev = () => goTo(active - 1);
+
+  // Respect prefers-reduced-motion
   useEffect(() => {
-    timerRef.current = setInterval(() => setActive(a => (a + 1) % heroes.length), 6000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [heroes.length]);
-  if (!heroes.length) return null;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Pause autoplay when the browser tab isn't visible
+  useEffect(() => {
+    const handler = () => setTabHidden(document.hidden);
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, []);
+
+  // Autoplay — resets automatically whenever `active` changes, whether from
+  // the timer itself, arrows, dots, swipe, or keyboard nav.
+  useEffect(() => {
+    if (count < 2 || paused || tabHidden || reducedMotion) return;
+    timeoutRef.current = setTimeout(() => { setActive(a => (a + 1) % count); setCycleKey(k => k + 1); }, HERO_AUTOPLAY_MS);
+    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+  }, [active, paused, tabHidden, reducedMotion, count]);
+
+  // Keyboard navigation (ignored while typing in an input/select/textarea)
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      const tag = (document.activeElement?.tagName || "").toLowerCase();
+      if (["input", "textarea", "select"].includes(tag)) return;
+      if (e.key === "ArrowLeft") prev();
+      else if (e.key === "ArrowRight") next();
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, count]);
+
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    const start = touchStartRef.current;
+    if (!start) return;
+    const dx = e.changedTouches[0].clientX - start.x;
+    const dy = e.changedTouches[0].clientY - start.y;
+    touchStartRef.current = null;
+    if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy)) return; // mostly-vertical or too-short swipe = ignore
+    if (dx < 0) next(); else prev();
+  }
+
+  if (!count) return null;
   const current = heroes[active];
   const title = current.title.english || current.title.romaji;
+
   return (
-    <div className="hero-banner" style={{ position: "relative", height: 560, overflow: "hidden" }}>
-      <img key={current.id} src={current.bannerImage || current.coverImage.extraLarge} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.45)", transition: "opacity 0.5s" }} />
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(13,13,20,0.95) 35%, rgba(13,13,20,0.35) 100%)" }} />
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 140, background: "linear-gradient(to top, var(--bg), transparent)" }} />
-      <div className="hero-content" style={{ position: "relative", height: "100%", maxWidth: 1320, margin: "0 auto", padding: "0 32px", display: "flex", alignItems: "center" }}>
-        <div style={{ flex: 1, maxWidth: 760 }}>
+    <div
+      ref={containerRef}
+      className="hero-banner"
+      style={{ position: "relative", height: 560, overflow: "hidden" }}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      role="region"
+      aria-label="Featured anime"
+    >
+      {/* Stacked slides — true crossfade via opacity, no remount/jump-cut */}
+      {heroes.map((hero, i) => {
+        const isActive = i === active;
+        return (
+          <div key={hero.id} style={{
+            position: "absolute", inset: 0,
+            opacity: isActive ? 1 : 0,
+            transition: "opacity 1s ease",
+            zIndex: isActive ? 1 : 0,
+            pointerEvents: "none",
+            overflow: "hidden",
+          }}>
+            <img
+              key={isActive ? `${hero.id}-${cycleKey}` : hero.id}
+              src={hero.bannerImage || hero.coverImage.extraLarge}
+              alt=""
+              className={isActive && !reducedMotion ? "hero-kenburns" : ""}
+              style={{
+                width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.45)",
+                animation: isActive && !reducedMotion ? `heroKenBurns ${HERO_AUTOPLAY_MS + 1000}ms ease-out forwards` : "none",
+              }}
+            />
+          </div>
+        );
+      })}
+
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(13,13,20,0.95) 35%, rgba(13,13,20,0.35) 100%)", zIndex: 2 }} />
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 140, background: "linear-gradient(to top, var(--bg), transparent)", zIndex: 2 }} />
+
+      {/* Prev / Next arrows */}
+      {count > 1 && (
+        <>
+          <button aria-label="Previous slide" onClick={prev} className="hero-arrow" style={{
+            position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)", zIndex: 5,
+            width: 44, height: 44, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.25)",
+            background: "rgba(13,13,13,0.45)", color: "#fff", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "background 0.2s, border-color 0.2s",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb), 0.55)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(13,13,13,0.45)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"; }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 4l-9 8 9 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <button aria-label="Next slide" onClick={next} className="hero-arrow" style={{
+            position: "absolute", right: 18, top: "50%", transform: "translateY(-50%)", zIndex: 5,
+            width: 44, height: 44, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.25)",
+            background: "rgba(13,13,13,0.45)", color: "#fff", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "background 0.2s, border-color 0.2s",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(var(--accent-rgb), 0.55)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(13,13,13,0.45)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"; }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 4l9 8-9 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+        </>
+      )}
+
+      <div className="hero-content" style={{ position: "relative", height: "100%", maxWidth: 1320, margin: "0 auto", padding: "0 32px", display: "flex", alignItems: "center", zIndex: 3 }}>
+        <div key={active} className={reducedMotion ? "" : "hero-text-anim"} style={{ flex: 1, maxWidth: 760, animation: reducedMotion ? "none" : "heroTextIn 0.5s ease both" }}>
           <p className="hero-meta" style={{ fontSize: 13, color: "var(--accent2)", fontWeight: 700, letterSpacing: 1.8, textTransform: "uppercase", marginBottom: 16 }}>{current.format || "ANIME"} · {current.seasonYear || ""}</p>
           <h1 className="hero-title" style={{ fontSize: 52, fontWeight: 900, lineHeight: 1.12, marginBottom: 18, textShadow: "0 2px 20px rgba(0,0,0,0.5)" }}>{title.length > 60 ? title.slice(0, 60) + "…" : title}</h1>
           <div className="hero-meta" style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 20, fontSize: 15, color: "var(--text-muted)", flexWrap: "wrap" }}>
@@ -76,11 +206,35 @@ function HeroBanner({ media }: { media: AniListMedia[] }) {
             </Link>
             <button style={{ padding: "14px 28px", borderRadius: 8, background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,0.5)", cursor: "pointer", fontWeight: 600, fontSize: 15 }}>+ PLAYLIST</button>
           </div>
-          <div style={{ display: "flex", gap: 6, marginTop: 40 }}>
-            {heroes.map((_, i) => (
-              <button key={i} onClick={() => setActive(i)} style={{ width: i === active ? 28 : 8, height: 8, borderRadius: 4, border: "none", background: i === active ? "var(--accent)" : "rgba(255,255,255,0.25)", cursor: "pointer", transition: "all 0.3s", padding: 0 }} />
-            ))}
-          </div>
+
+          {/* Progress-bar indicators (replace plain dots) */}
+          {count > 1 && (
+            <div style={{ display: "flex", gap: 6, marginTop: 40 }}>
+              {heroes.map((h, i) => (
+                <button
+                  key={h.id}
+                  aria-label={`Go to slide ${i + 1}`}
+                  onClick={() => goTo(i)}
+                  style={{
+                    width: 32, height: 4, borderRadius: 3, border: "none", padding: 0, cursor: "pointer",
+                    background: "rgba(255,255,255,0.25)", overflow: "hidden", position: "relative",
+                  }}
+                >
+                  {i === active && (
+                    <span
+                      key={cycleKey}
+                      className={(!paused && !tabHidden && !reducedMotion) ? "hero-progress-fill" : ""}
+                      style={{
+                        position: "absolute", inset: 0, background: "var(--accent)", borderRadius: 3,
+                        width: (paused || tabHidden) ? "100%" : undefined,
+                        animation: (!paused && !tabHidden && !reducedMotion) ? `heroProgressFill ${HERO_AUTOPLAY_MS}ms linear forwards` : "none",
+                      }}
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
