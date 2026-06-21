@@ -47,27 +47,27 @@ function HeroBanner({ media }: { media: AniListMedia[] }) {
   const current = heroes[active];
   const title = current.title.english || current.title.romaji;
   return (
-    <div style={{ position: "relative", height: 560, overflow: "hidden" }}>
+    <div className="hero-banner" style={{ position: "relative", height: 560, overflow: "hidden" }}>
       <img key={current.id} src={current.bannerImage || current.coverImage.extraLarge} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.45)", transition: "opacity 0.5s" }} />
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(13,13,20,0.95) 35%, rgba(13,13,20,0.35) 100%)" }} />
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 140, background: "linear-gradient(to top, var(--bg), transparent)" }} />
-      <div style={{ position: "relative", height: "100%", maxWidth: 1320, margin: "0 auto", padding: "0 32px", display: "flex", alignItems: "center" }}>
+      <div className="hero-content" style={{ position: "relative", height: "100%", maxWidth: 1320, margin: "0 auto", padding: "0 32px", display: "flex", alignItems: "center" }}>
         <div style={{ flex: 1, maxWidth: 760 }}>
-          <p style={{ fontSize: 13, color: "var(--accent2)", fontWeight: 700, letterSpacing: 1.8, textTransform: "uppercase", marginBottom: 16 }}>{current.format || "ANIME"} · {current.seasonYear || ""}</p>
-          <h1 style={{ fontSize: 52, fontWeight: 900, lineHeight: 1.12, marginBottom: 18, textShadow: "0 2px 20px rgba(0,0,0,0.5)" }}>{title.length > 60 ? title.slice(0, 60) + "…" : title}</h1>
-          <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 20, fontSize: 15, color: "var(--text-muted)" }}>
+          <p className="hero-meta" style={{ fontSize: 13, color: "var(--accent2)", fontWeight: 700, letterSpacing: 1.8, textTransform: "uppercase", marginBottom: 16 }}>{current.format || "ANIME"} · {current.seasonYear || ""}</p>
+          <h1 className="hero-title" style={{ fontSize: 52, fontWeight: 900, lineHeight: 1.12, marginBottom: 18, textShadow: "0 2px 20px rgba(0,0,0,0.5)" }}>{title.length > 60 ? title.slice(0, 60) + "…" : title}</h1>
+          <div className="hero-meta" style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 20, fontSize: 15, color: "var(--text-muted)", flexWrap: "wrap" }}>
             <span>{current.seasonYear}</span>
             <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--text-dim)" }} />
             <span>{current.genres.slice(0, 3).join(", ")}</span>
             {current.episodes && <><span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--text-dim)" }} /><span>{current.episodes} Episodes</span></>}
           </div>
           {current.description && (
-            <p style={{
+            <p className="hero-desc" style={{
               fontSize: 15, lineHeight: 1.7, color: "var(--text-muted)", marginBottom: 28,
               maxWidth: 600, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
             }} dangerouslySetInnerHTML={{ __html: current.description.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "") }} />
           )}
-          <div style={{ display: "flex", gap: 14, marginTop: 8 }}>
+          <div className="hero-actions" style={{ display: "flex", gap: 14, marginTop: 8, flexWrap: "wrap" }}>
             <Link href={`/anime/${current.id}`}>
               <button style={{ padding: "14px 32px", borderRadius: 8, background: "var(--accent)", color: "#fff", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 15, display: "flex", alignItems: "center", gap: 8 }}>
                 <svg width="14" height="16" viewBox="0 0 12 14" fill="#fff"><path d="M1 1l10 6-10 6V1z"/></svg>
@@ -113,9 +113,9 @@ function SectionRail({ title, subtitle, items, viewAllHref }: { title: string; s
 // ─── Top 10 + Newest Episodes ─────────────────────────────────────────────────
 function Top10({ items }: { items: AniListMedia[] }) {
   return (
-    <div style={{ display: "flex", gap: 40, marginBottom: 52 }}>
+    <div className="top10-row" style={{ display: "flex", gap: 40, marginBottom: 52 }}>
       <div style={{ flex: 1 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
           <h2 style={{ fontSize: 22, fontWeight: 800 }}>Top 10 This Week</h2>
           <div style={{ display: "flex", gap: 12 }}>
             <button style={{ fontSize: 12, color: "var(--accent)", fontWeight: 700, background: "none", border: "none", cursor: "pointer" }}>Animes</button>
@@ -142,8 +142,8 @@ function Top10({ items }: { items: AniListMedia[] }) {
           })}
         </div>
       </div>
-      <div style={{ width: 420, flexShrink: 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+      <div style={{ width: 420, maxWidth: "100%", flexShrink: 0 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
           <h2 style={{ fontSize: 22, fontWeight: 800 }}>Newest Animes Episodes</h2>
           <div style={{ display: "flex", gap: 10 }}>
             {["Today", "This week", "Last 30 days"].map((t, i) => (
@@ -209,13 +209,13 @@ export default function HomePage() {
     <div style={{ minHeight: "100vh" }}>
       <Navbar />
       {!loading && trending.length > 0 && <HeroBanner media={trending} />}
-      <main style={{ maxWidth: 1320, margin: "0 auto", padding: "40px 32px" }}>
+      <main className="page-pad" style={{ maxWidth: 1320, margin: "0 auto", padding: "40px 32px" }}>
         {loading ? (
           <div>
             {Array.from({ length: 3 }).map((_, idx) => (
               <div key={idx} style={{ marginBottom: 44 }}>
                 <div className="skeleton" style={{ height: 26, width: 200, borderRadius: 6, marginBottom: 16 }} />
-                <div style={{ display: "flex", gap: 14 }}>
+                <div className="scroll-rail">
                   {Array.from({ length: 7 }).map((_, i) => <CardSkeleton key={i} />)}
                 </div>
               </div>
@@ -228,7 +228,7 @@ export default function HomePage() {
             <Top10 items={popular} />
             <SectionRail title="Latest Releases" items={seasonal.slice(0, 10)} viewAllHref="/browse?sort=START_DATE_DESC" />
             <section style={{ marginBottom: 52 }}>
-              <div style={{ background: "var(--surface)", borderRadius: 16, padding: "32px", display: "flex", gap: 32, alignItems: "center" }}>
+              <div className="favorites-panel" style={{ background: "var(--surface)", borderRadius: 16, padding: "32px", display: "flex", gap: 32, alignItems: "center" }}>
                 <div style={{ flex: 1 }}>
                   <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 12 }}>All Time Favorites</h2>
                   <div style={{ display: "flex", gap: 6 }}>
@@ -242,7 +242,7 @@ export default function HomePage() {
               </div>
             </section>
             <section style={{ marginBottom: 52 }}>
-              <div style={{ background: "var(--surface2)", borderRadius: 16, padding: "32px", display: "flex", gap: 32, alignItems: "center" }}>
+              <div className="favorites-panel" style={{ background: "var(--surface2)", borderRadius: 16, padding: "32px", display: "flex", gap: 32, alignItems: "center" }}>
                 <div style={{ flex: 1 }}>
                   <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 12 }}>Show Me Something New</h2>
                   <div style={{ display: "flex", gap: 6 }}>

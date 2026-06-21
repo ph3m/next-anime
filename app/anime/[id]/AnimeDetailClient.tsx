@@ -16,7 +16,7 @@ const PROVIDERS = [
 
 function StatBox({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
   return (
-    <div style={{ background: "var(--surface2)", borderRadius: 12, padding: "20px 26px", flex: wide ? "0 0 auto" : 1, minWidth: wide ? 190 : 120 }}>
+    <div className="stat-box" style={{ background: "var(--surface2)", borderRadius: 12, padding: "20px 26px", flex: wide ? "0 0 auto" : 1, minWidth: wide ? 190 : 120 }}>
       <p style={{ fontSize: 11.5, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 1.3, marginBottom: 6 }}>{label}</p>
       <p style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.2 }}>{value}</p>
     </div>
@@ -105,7 +105,7 @@ export default function AnimeDetailClient({ anime, id }: { anime: AniListMedia; 
       <Navbar />
 
       {/* ── Banner ── */}
-      <div style={{ position: "relative", height: 460, overflow: "hidden" }}>
+      <div className="detail-banner" style={{ position: "relative", height: 460, overflow: "hidden" }}>
         {anime.bannerImage ? (
           <img src={anime.bannerImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.55)" }} />
         ) : (
@@ -115,7 +115,7 @@ export default function AnimeDetailClient({ anime, id }: { anime: AniListMedia; 
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(13,13,13,0.7) 0%, transparent 60%)" }} />
         <div style={{ position: "absolute", bottom: 28, left: 32, right: 32, maxWidth: 1320, margin: "0 auto" }}>
           {anime.title.romaji !== title && <p style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 600, letterSpacing: 1.6, textTransform: "uppercase", marginBottom: 8 }}>{anime.title.romaji}</p>}
-          <h1 style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.12, textShadow: "0 2px 20px rgba(0,0,0,0.6)", marginBottom: 14 }}>{title}</h1>
+          <h1 className="detail-title" style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.12, textShadow: "0 2px 20px rgba(0,0,0,0.6)", marginBottom: 14 }}>{title}</h1>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {tags.slice(0, 4).map(t => (
               <span key={t.label} style={{ padding: "5px 14px", borderRadius: 5, fontSize: 13, fontWeight: 600, background: t.type === "format" ? "rgba(255,255,255,0.15)" : "rgba(var(--accent-rgb), 0.18)", color: t.type === "format" ? "#fff" : "var(--accent2)", border: `1px solid ${t.type === "format" ? "rgba(255,255,255,0.2)" : "rgba(var(--accent-rgb), 0.3)"}` }}>{t.label}</span>
@@ -124,11 +124,11 @@ export default function AnimeDetailClient({ anime, id }: { anime: AniListMedia; 
         </div>
       </div>
 
-      <main style={{ maxWidth: 1320, margin: "0 auto", padding: "0 32px 70px" }}>
+      <main className="page-pad" style={{ maxWidth: 1320, margin: "0 auto", padding: "0 32px 70px" }}>
         {/* ── Stat row ── */}
-        <div style={{ display: "flex", gap: 14, marginTop: -24, marginBottom: 40, position: "relative", zIndex: 10, flexWrap: "wrap" }}>
+        <div className="stat-row" style={{ display: "flex", gap: 14, marginTop: -24, marginBottom: 40, position: "relative", zIndex: 10, flexWrap: "wrap" }}>
           <Link href={`/anime/${id}`}>
-            <div style={{ width: 88, height: 88, borderRadius: 12, background: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "opacity 0.2s", flexShrink: 0 }}
+            <div className="play-btn" style={{ width: 88, height: 88, borderRadius: 12, background: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "opacity 0.2s", flexShrink: 0 }}
               onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
               onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
               <svg width="34" height="34" viewBox="0 0 24 24" fill="#fff"><path d="M5 3l14 9-14 9V3z"/></svg>
@@ -141,7 +141,7 @@ export default function AnimeDetailClient({ anime, id }: { anime: AniListMedia; 
         </div>
 
         {/* ── Two-column layout ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 48 }}>
+        <div className="detail-grid" style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 48 }}>
           {/* Left */}
           <div>
             {anime.description && (
@@ -153,14 +153,14 @@ export default function AnimeDetailClient({ anime, id }: { anime: AniListMedia; 
 
             {/* Player */}
             <section style={{ marginBottom: 40 }}>
-              <div style={{ display: "flex", gap: 2, marginBottom: 16 }}>
+              <div className="player-controls" style={{ display: "flex", gap: 2, marginBottom: 16, flexWrap: "wrap", rowGap: 8 }}>
                 {PROVIDERS.map((p, i) => (
                   <button key={p.name} onClick={() => { setProvider(i); setIframeKey(k => k + 1); }}
                     style={{ padding: "9px 18px", border: "none", background: provider === i ? "var(--accent)" : "var(--surface2)", color: provider === i ? "#fff" : "var(--text-muted)", cursor: "pointer", fontSize: 13.5, fontWeight: 600, borderRadius: i === 0 ? "8px 0 0 8px" : i === PROVIDERS.length - 1 ? "0 8px 8px 0" : "0" }}>
                     {p.name}
                   </button>
                 ))}
-                <div style={{ flex: 1 }} />
+                <div className="player-spacer" style={{ flex: 1 }} />
                 {["Sub", "Dub"].map(t => (
                   <button key={t} onClick={() => { setDub(t === "Dub"); setIframeKey(k => k + 1); }}
                     style={{ padding: "9px 18px", borderRadius: 8, border: "1px solid", borderColor: (dub ? "Dub" : "Sub") === t ? "var(--accent)" : "var(--border)", background: (dub ? "Dub" : "Sub") === t ? "rgba(var(--accent-rgb), 0.15)" : "transparent", color: (dub ? "Dub" : "Sub") === t ? "var(--accent)" : "var(--text-muted)", cursor: "pointer", fontSize: 13.5, fontWeight: 700, marginLeft: 4 }}>
@@ -183,11 +183,11 @@ export default function AnimeDetailClient({ anime, id }: { anime: AniListMedia; 
 
             {/* Episodes */}
             <section>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
                 <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 1.3 }}>
                   EPISODES {epLoading ? "" : `(${episodes.length})`}
                 </p>
-                <div style={{ display: "flex", gap: 10 }}>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   {["Crunchyroll", "GoGoAnime", "Aniwatch", "VidSrc (unstable)"].map((s, i) => (
                     <button key={s} style={{ fontSize: 12.5, padding: "3px 0", background: "none", border: "none", color: i === 1 ? "var(--accent)" : "var(--text-muted)", cursor: "pointer", fontWeight: i === 1 ? 700 : 400 }}>{s}{i < 3 ? " |" : ""}</button>
                   ))}

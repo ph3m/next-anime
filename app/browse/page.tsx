@@ -57,10 +57,11 @@ function FilterSelect({ value, onChange, options, placeholder, highlighted }: {
   highlighted?: boolean;
 }) {
   return (
-    <div style={{ position: "relative" }}>
+    <div className="filter-select-wrap" style={{ position: "relative" }}>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
+        className="filter-select"
         style={{
           appearance: "none", WebkitAppearance: "none",
           padding: "10px 32px 10px 14px", borderRadius: 8,
@@ -165,14 +166,14 @@ function BrowseInner() {
   return (
     <div style={{ minHeight: "100vh" }}>
       <Navbar />
-      <main style={{ maxWidth: 1320, margin: "0 auto", padding: "40px 32px 70px" }}>
+      <main className="page-pad" style={{ maxWidth: 1320, margin: "0 auto", padding: "40px 32px 70px" }}>
         <h1 style={{ fontSize: 30, fontWeight: 900, marginBottom: 4 }}>Browse Anime</h1>
         <p style={{ fontSize: 14, color: "var(--text-muted)", marginBottom: 24 }}>
           {pageInfo?.total != null ? `${pageInfo.total.toLocaleString()} results` : "Loading…"}
         </p>
 
         {/* Filter bar */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+        <div className="filter-bar" style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
           <div style={{ position: "relative", flex: "1 1 240px", minWidth: 200 }}>
             <svg style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-dim)" }} width="14" height="14" viewBox="0 0 20 20" fill="none">
               <circle cx="9" cy="9" r="6.5" stroke="currentColor" strokeWidth="1.8"/>
@@ -215,7 +216,7 @@ function BrowseInner() {
 
         {/* Results grid */}
         {loading ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 16 }}>
+          <div className="card-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 16 }}>
             {Array.from({ length: 12 }).map((_, i) => <CardSkeleton key={i} />)}
           </div>
         ) : results.length === 0 ? (
@@ -226,7 +227,7 @@ function BrowseInner() {
           </div>
         ) : (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 16 }}>
+            <div className="card-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 16 }}>
               {results.map(a => <AnimeCard key={a.id} anime={a} />)}
             </div>
 

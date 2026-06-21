@@ -18,8 +18,8 @@ export default function Footer() {
 
   return (
     <footer style={{ background: "var(--surface)", borderTop: "1px solid var(--border)", marginTop: 60 }}>
-      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "52px 32px 0" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr 1.2fr", gap: 40, marginBottom: 40 }}>
+      <div className="page-pad" style={{ maxWidth: 1320, margin: "0 auto", padding: "52px 32px 0" }}>
+        <div className="footer-grid" style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr 1.2fr", gap: 40, marginBottom: 40 }}>
           {/* Brand column */}
           <div>
             <Link href="/" style={{ display: "inline-flex" }}>

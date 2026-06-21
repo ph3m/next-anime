@@ -158,7 +158,7 @@ function MultiColDropdown({ cols, viewAllLabel, viewAllHref, paramName, activeVa
 }
 
 // ── Search box with live suggestions ───────────────────────────────────────
-function SearchBox() {
+function SearchBox({ fullWidth = false, autoFocus = false }: { fullWidth?: boolean; autoFocus?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlQuery = searchParams.get("q") || "";
@@ -168,7 +168,10 @@ function SearchBox() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchingSuggestions, setSearchingSuggestions] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => { if (autoFocus) inputRef.current?.focus(); }, [autoFocus]);
 
   // Keep input synced if the URL query changes externally (e.g. back button)
   useEffect(() => { setQuery(urlQuery); }, [urlQuery]);
@@ -222,7 +225,7 @@ function SearchBox() {
   }
 
   return (
-    <div ref={wrapRef} style={{ position: "relative", width: 280, flexShrink: 0 }}>
+    <div ref={wrapRef} style={{ position: "relative", width: fullWidth ? "100%" : 280, flexShrink: 0 }}>
       <form onSubmit={handleSubmit}>
         <svg style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-dim)", pointerEvents: "none" }}
           width="15" height="15" viewBox="0 0 20 20" fill="none">
@@ -230,6 +233,7 @@ function SearchBox() {
           <path d="M14.5 14.5L18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
         </svg>
         <input
+          ref={inputRef}
           value={query}
           onChange={e => setQuery(e.target.value)}
           onFocus={() => { if (suggestions.length) setShowSuggestions(true); }}
@@ -292,12 +296,92 @@ function SearchBox() {
   );
 }
 
+// ── Mobile menu panel (replaces the desktop dropdown nav on small screens) ──
+function MobileAccordionSection({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ borderBottom: "1px solid var(--border)" }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "14px 4px", background: "none", border: "none", color: "var(--text)",
+        fontSize: 15, fontWeight: 600, cursor: "pointer",
+      }}>
+        {title}
+        <svg width="13" height="13" viewBox="0 0 10 10" fill="none" style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "" }}>
+          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+        </svg>
+      </button>
+      {open && <div style={{ paddingBottom: 16 }}>{children}</div>}
+    </div>
+  );
+}
+
+function ChipLink({ href, label, active }: { href: string; label: string; active?: boolean }) {
+  return (
+    <Link href={href}>
+      <span style={{
+        display: "inline-flex", alignItems: "center", padding: "7px 13px", borderRadius: 20,
+        fontSize: 13, fontWeight: active ? 700 : 500,
+        background: active ? "rgba(var(--accent-rgb), 0.16)" : "var(--surface2)",
+        color: active ? "var(--accent2)" : "var(--text-muted)",
+        border: `1px solid ${active ? "rgba(var(--accent-rgb), 0.35)" : "var(--border)"}`,
+      }}>
+        {label}
+      </span>
+    </Link>
+  );
+}
+
+function MobileMenuPanel({ onNavigate, urlType, urlGenre, urlTheme }: {
+  onNavigate: () => void;
+  urlType: string; urlGenre: string; urlTheme: string;
+}) {
+  return (
+    <div className="mobile-menu-panel" style={{
+      position: "absolute", top: "100%", left: 0, right: 0,
+      background: "#100e0c", borderBottom: "1px solid var(--border)",
+      maxHeight: "calc(100vh - var(--nav-height))", overflowY: "auto",
+      boxShadow: "0 16px 40px rgba(0,0,0,0.5)", zIndex: 150,
+    }} onClick={onNavigate}>
+      <div style={{ padding: "8px 20px 20px" }}>
+        {[["Home", "/"], ["Browse", "/browse"], ["Schedule", "/schedule"]].map(([label, href]) => (
+          <Link key={label} href={href}>
+            <div style={{ padding: "13px 4px", fontSize: 15, fontWeight: 600, color: "var(--text)", borderBottom: "1px solid var(--border)" }}>
+              {label}
+            </div>
+          </Link>
+        ))}
+
+        <MobileAccordionSection title="Types">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {TYPES.map(t => <ChipLink key={t} href={`/browse?type=${encodeURIComponent(t)}`} label={t} active={urlType.toLowerCase() === t.toLowerCase()} />)}
+          </div>
+        </MobileAccordionSection>
+
+        <MobileAccordionSection title="Genres">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {GENRES_COLS.flat().map(g => <ChipLink key={g} href={`/browse?genre=${encodeURIComponent(g)}`} label={g} active={urlGenre.toLowerCase() === g.toLowerCase()} />)}
+          </div>
+        </MobileAccordionSection>
+
+        <MobileAccordionSection title="Themes">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {THEMES_COLS.flat().map(t => <ChipLink key={t} href={`/browse?theme=${encodeURIComponent(t)}`} label={t} active={urlTheme.toLowerCase() === t.toLowerCase()} />)}
+          </div>
+        </MobileAccordionSection>
+      </div>
+    </div>
+  );
+}
+
 // ── Inner navbar (needs Suspense for useSearchParams) ──────────────────────
 function NavbarInner() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const onBrowse = pathname === "/browse";
   const onSchedule = pathname === "/schedule";
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const urlGenre = onBrowse ? searchParams.get("genre") || "" : "";
   const urlType = onBrowse ? searchParams.get("type") || "" : "";
@@ -310,54 +394,119 @@ function NavbarInner() {
   const matchedTheme = allThemes.find(t => t.toLowerCase() === urlTheme.toLowerCase());
   const matchedType = TYPES.find(t => t.toLowerCase() === urlType.toLowerCase());
 
+  // Close mobile overlays on route change
+  useEffect(() => { setMobileMenuOpen(false); setMobileSearchOpen(false); }, [pathname]);
+
+  const mobileOverlayOpen = mobileMenuOpen || mobileSearchOpen;
+
   return (
-    <header style={{
+    <header className="site-header" style={{
       position: "sticky", top: 0, zIndex: 100,
-      background: "rgba(13,13,13,0.97)",
-      backdropFilter: "blur(14px)",
-      borderBottom: "1px solid var(--border)",
-      height: "var(--nav-height)",
-      display: "flex", alignItems: "center",
-      padding: "0 32px", gap: 4,
+      background: mobileOverlayOpen ? "#100e0c" : "transparent",
+      backdropFilter: "blur(10px)",
+      WebkitBackdropFilter: "blur(10px)",
+      minHeight: "var(--nav-height)",
+      padding: "0 clamp(12px, 4vw, 32px)",
+      transition: "background 0.15s",
     }}>
-      {/* Logo */}
-      <Link href="/" aria-label="Next Anime home" style={{ display: "flex", alignItems: "center", marginRight: 20, flexShrink: 0, textDecoration: "none" }}>
-        <Image src="/logo-full.png" alt="Next Anime" width={114} height={34} priority style={{ height: 100, width: "auto", objectFit: "contain" }} />
-      </Link>
+      <div style={{ display: "flex", alignItems: "center", gap: 4, height: "var(--nav-height)" }}>
+        {/* Logo */}
+        <Link href="/" aria-label="Next Anime home" style={{ display: "flex", alignItems: "center", marginRight: 20, flexShrink: 0, textDecoration: "none" }}>
+         <Image
+                className="navbar-logo-img"
+                src="/logo-full.png"
+                alt="Next Anime"
+                width={180}
+                height={55}
+                priority
+              />
+        </Link>
 
-      {/* Nav links — flex:1 just absorbs leftover space, pushing search/avatar right */}
-      <nav style={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
-        <NavItem label="Home" href="/" active={pathname === "/"} />
-        <NavItem label="Browse" href="/browse" active={onBrowse && !matchedType && !matchedGenre && !matchedTheme} />
-        <NavItem label="Schedule" href="/schedule" active={onSchedule} />
-        <NavItem label="Types" active={!!matchedType} dropdown={<TypesDropdown activeType={urlType} />} />
-        <NavItem
-          label={matchedGenre || "Genres"}
-          active={!!matchedGenre}
-          dropdown={<MultiColDropdown cols={GENRES_COLS} viewAllLabel="View all genres" viewAllHref="/browse" paramName="genre" activeValue={urlGenre} />}
-        />
-        <NavItem
-          label={matchedTheme || "Themes"}
-          active={!!matchedTheme}
-          dropdown={<MultiColDropdown cols={THEMES_COLS} viewAllLabel="View all themes" viewAllHref="/browse" paramName="theme" activeValue={urlTheme} />}
-        />
-      </nav>
+        {/* Desktop nav links — flex:1 absorbs leftover space, pushing search/avatar right */}
+        <nav className="nav-links-desktop" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
+          <NavItem label="Home" href="/" active={pathname === "/"} />
+          <NavItem label="Browse" href="/browse" active={onBrowse && !matchedType && !matchedGenre && !matchedTheme} />
+          <NavItem label="Schedule" href="/schedule" active={onSchedule} />
+          <NavItem label="Types" active={!!matchedType} dropdown={<TypesDropdown activeType={urlType} />} />
+          <NavItem
+            label={matchedGenre || "Genres"}
+            active={!!matchedGenre}
+            dropdown={<MultiColDropdown cols={GENRES_COLS} viewAllLabel="View all genres" viewAllHref="/browse" paramName="genre" activeValue={urlGenre} />}
+          />
+          <NavItem
+            label={matchedTheme || "Themes"}
+            active={!!matchedTheme}
+            dropdown={<MultiColDropdown cols={THEMES_COLS} viewAllLabel="View all themes" viewAllHref="/browse" paramName="theme" activeValue={urlTheme} />}
+          />
+        </nav>
 
-      {/* Search — now sits right next to the avatar */}
-      <SearchBox />
+        {/* Desktop search */}
+        <div className="navbar-search-desktop">
+          <SearchBox />
+        </div>
 
-      {/* User avatar */}
-      <div style={{
-        width: 34, height: 34, borderRadius: "50%",
-        background: "var(--surface3)", border: "2px solid var(--border)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        cursor: "pointer", flexShrink: 0, marginLeft: 12,
-      }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.8"/>
-          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-        </svg>
+        {/* Desktop avatar */}
+        <div className="avatar-desktop" style={{
+          width: 34, height: 34, borderRadius: "50%",
+          background: "var(--surface3)", border: "2px solid var(--border)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer", flexShrink: 0, marginLeft: 12,
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.8"/>
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+          </svg>
+        </div>
+
+        {/* Mobile-only controls: search toggle + hamburger */}
+        <div className="mobile-controls" style={{ marginLeft: "auto", gap: 8, alignItems: "center" }}>
+          <button
+            aria-label="Search"
+            onClick={() => { setMobileSearchOpen(o => !o); setMobileMenuOpen(false); }}
+            style={{
+              width: 36, height: 36, borderRadius: 8, background: mobileSearchOpen ? "var(--surface2)" : "none",
+              border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--text)", cursor: "pointer",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+              <circle cx="9" cy="9" r="6.5" stroke="currentColor" strokeWidth="1.8"/>
+              <path d="M14.5 14.5L18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+            </svg>
+          </button>
+          <button
+            aria-label="Menu"
+            onClick={() => { setMobileMenuOpen(o => !o); setMobileSearchOpen(false); }}
+            style={{
+              width: 36, height: 36, borderRadius: 8, background: mobileMenuOpen ? "var(--surface2)" : "none",
+              border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--text)", cursor: "pointer",
+            }}
+          >
+            {mobileMenuOpen ? (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile expanded search row */}
+      {mobileSearchOpen && (
+        <div style={{ padding: "10px 0 14px" }}>
+          <SearchBox fullWidth autoFocus />
+        </div>
+      )}
+
+      {/* Mobile menu panel */}
+      {mobileMenuOpen && (
+        <MobileMenuPanel onNavigate={() => setMobileMenuOpen(false)} urlType={urlType} urlGenre={urlGenre} urlTheme={urlTheme} />
+      )}
     </header>
   );
 }

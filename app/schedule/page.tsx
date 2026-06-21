@@ -91,8 +91,8 @@ export default function SchedulePage() {
   return (
     <div style={{ minHeight: "100vh" }}>
       <Navbar />
-      <main style={{ maxWidth: 1320, margin: "0 auto", padding: "40px 32px 70px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16, marginBottom: 28 }}>
+      <main className="page-pad" style={{ maxWidth: 1320, margin: "0 auto", padding: "40px 32px 70px" }}>
+        <div className="schedule-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16, marginBottom: 28 }}>
           <div>
             <h1 style={{ fontSize: 30, fontWeight: 900, marginBottom: 4 }}>Airing Schedule</h1>
             <p style={{ fontSize: 14, color: "var(--text-muted)" }}>Episode release times in your local timezone</p>
@@ -163,14 +163,14 @@ export default function SchedulePage() {
                     const past = isPast(entry.airingAt);
                     return (
                       <Link key={entry.id} href={`/anime/${entry.media.id}`}>
-                        <div style={{
+                        <div className="schedule-row" style={{
                           display: "flex", alignItems: "center", gap: 16, padding: "12px 16px",
                           background: "var(--surface)", borderRadius: 10, cursor: "pointer", transition: "background 0.15s",
                         }}
                           onMouseEnter={e => (e.currentTarget.style.background = "var(--surface2)")}
                           onMouseLeave={e => (e.currentTarget.style.background = "var(--surface)")}
                         >
-                          <div style={{ width: 64, textAlign: "center", flexShrink: 0 }}>
+                          <div className="schedule-row-time" style={{ width: 64, textAlign: "center", flexShrink: 0 }}>
                             <p style={{ fontSize: 13.5, fontWeight: 700 }}>{formatTime(airDate)}</p>
                           </div>
                           <img src={entry.media.coverImage.large} alt={title} style={{ width: 44, height: 60, objectFit: "cover", borderRadius: 6, flexShrink: 0, background: "var(--bg2)" }} />
@@ -178,7 +178,7 @@ export default function SchedulePage() {
                             <p style={{ fontSize: 14.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</p>
                             <p style={{ fontSize: 12.5, color: "var(--text-muted)", marginTop: 2 }}>Episode {entry.episode}</p>
                           </div>
-                          <span style={{
+                          <span className="schedule-row-badge" style={{
                             padding: "4px 11px", borderRadius: 20, fontSize: 11.5, fontWeight: 700, flexShrink: 0,
                             background: past ? "var(--surface3)" : "rgba(var(--accent-rgb), 0.15)",
                             color: past ? "var(--text-muted)" : "var(--accent2)",

@@ -18,7 +18,7 @@
   --green: #34d399;
   --blue: #60a5fa;
   --yellow: #fbbf24;
-  --nav-height: 65px;
+  --nav-height: 70px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -65,3 +65,155 @@ button { font-family: inherit; }
   scrollbar-color: var(--surface3) transparent;
 }
 .scroll-rail::-webkit-scrollbar { height: 4px; }
+
+
+/* ──────────────────────────────────────────────────────────────────────────
+   RESPONSIVE LAYER
+   Most of the app uses inline styles (fixed px values), so the rules below
+   use !important to win over them at the breakpoints where things need to
+   change. Two breakpoints: tablet (≤900px) and small phones (≤480px).
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Page padding shrinks on smaller screens instead of staying at a fixed 32px */
+@media (max-width: 900px) {
+  .page-pad { padding-left: 20px !important; padding-right: 20px !important; }
+}
+@media (max-width: 480px) {
+  .page-pad { padding-left: 14px !important; padding-right: 14px !important; }
+}
+
+/* ── Navbar ── */
+
+.mobile-controls {
+  display: none;
+}
+
+/* Default logo size */
+.navbar-logo-img {
+  width: 180px !important;
+  height: auto !important;
+  object-fit: contain;
+  transition: width 0.25s ease;
+}
+
+
+/* Tablet */
+@media (max-width: 900px) {
+
+  .nav-links-desktop {
+    display: none !important;
+  }
+
+  .navbar-search-desktop {
+    display: none !important;
+  }
+
+  .avatar-desktop {
+    display: none !important;
+  }
+
+  .mobile-controls {
+    display: flex !important;
+  }
+
+
+  /* Keep logo visible */
+  .navbar-logo-img {
+    width: 160px !important;
+    height: auto !important;
+  }
+
+
+  .site-header {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+}
+
+
+/* Small phones */
+@media (max-width:480px){
+
+  .navbar-logo-img {
+    width: 145px !important;
+    height: auto !important;
+  }
+
+
+  .site-header {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+}
+
+/* ── Hero banner ── */
+@media (max-width: 900px) {
+  .hero-banner { height: 460px !important; }
+  .hero-content { max-width: 100% !important; padding: 0 20px !important; }
+  .hero-title { font-size: 32px !important; }
+  .hero-desc { display: none !important; }
+}
+@media (max-width: 480px) {
+  .hero-banner { height: 400px !important; }
+  .hero-title { font-size: 26px !important; }
+  .hero-meta { font-size: 12px !important; }
+  .hero-actions button { padding: 10px 18px !important; font-size: 13px !important; }
+}
+
+/* ── Generic responsive grids ── */
+@media (max-width: 900px) {
+  .footer-grid { grid-template-columns: 1fr 1fr !important; gap: 28px !important; }
+  .detail-grid { grid-template-columns: 1fr !important; gap: 28px !important; }
+  .top10-row { flex-direction: column !important; }
+  .top10-row > * { width: 100% !important; }
+  .favorites-panel { flex-direction: column !important; align-items: flex-start !important; padding: 22px !important; }
+  .favorites-panel > div:first-child { flex: 0 0 auto !important; width: 100% !important; display: flex !important; justify-content: space-between !important; align-items: center !important; }
+  .favorites-panel .scroll-rail { flex: none !important; width: 100% !important; }
+}
+@media (max-width: 600px) {
+  .footer-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── Anime detail page ── */
+@media (max-width: 900px) {
+  .detail-banner { height: 320px !important; }
+  .detail-title { font-size: 32px !important; }
+  .stat-row { gap: 8px !important; }
+  .stat-row .play-btn { width: 64px !important; height: 64px !important; }
+}
+@media (max-width: 560px) {
+  .player-spacer { flex-basis: 100% !important; height: 0 !important; }
+  .player-controls button { padding: 8px 13px !important; font-size: 12.5px !important; }
+}
+@media (max-width: 480px) {
+  .detail-title { font-size: 24px !important; }
+  .detail-banner { height: 260px !important; }
+  .stat-box { padding: 12px 14px !important; min-width: 90px !important; }
+  .stat-box p:last-child { font-size: 16px !important; }
+}
+
+/* ── Browse filter bar ── */
+@media (max-width: 600px) {
+  .filter-bar > * { flex: 1 1 100% !important; min-width: 0 !important; }
+  .filter-select-wrap { width: 100% !important; }
+  .filter-select { width: 100% !important; }
+}
+
+/* ── Schedule page ── */
+@media (max-width: 700px) {
+  .schedule-header { flex-direction: column !important; align-items: flex-start !important; }
+}
+@media (max-width: 480px) {
+  .schedule-row { gap: 10px !important; padding: 10px !important; }
+  .schedule-row-time { width: 44px !important; }
+  .schedule-row-time p { font-size: 11px !important; }
+  .schedule-row-badge { display: none !important; }
+}
+
+/* ── Generic auto-fit card grids already use auto-fill/minmax and need no
+   media query, but on very small phones we tighten the gap a bit ── */
+@media (max-width: 480px) {
+  .card-grid { gap: 10px !important; }
+}
