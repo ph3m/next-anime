@@ -10,7 +10,7 @@
 [![Tailwind](https://img.shields.io/badge/Tailwind-4-38B2AC?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[Live Demo](#) · [Report a Bug](../../issues) · [Request a Feature](../../issues)
+[Live Demo](https://next-anime-flame-rho.vercel.app/) · [Report a Bug](#) · [Request a Feature](#)
 
 </div>
 
@@ -58,7 +58,7 @@ A few things in here that go beyond a typical tutorial project, worth a look if 
 ## Getting Started
 
 ```bash
-git clone https://github.com/<your-username>/next-anime.git
+git clone https://github.com/ph3m/next-anime.git
 cd next-anime
 npm install
 cp .env.example .env.local   # optional — only needed for canonical/OG URLs
