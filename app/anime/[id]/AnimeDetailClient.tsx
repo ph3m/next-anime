@@ -10,8 +10,8 @@ interface Episode { number: number; title: string; episodeId: string; }
 
 const PROVIDERS = [
   { name: "Server 1", getUrl: (_m: number, ep: number, dub: boolean, aid?: string) => `https://tryembed.us.cc/embed/anime/${aid}/${ep}/${dub ? "dub" : "sub"}` },
-  { name: "Server 2", getUrl: (m: number, ep: number, dub: boolean) => `https://megaplay.buzz/stream/s-1/${m}/${ep}/${dub ? "dub" : "sub"}` },
-  { name: "Server 3", getUrl: (m: number, ep: number, dub: boolean) => `https://vidsrc.me/embed/anime?mal=${m}&episode=${ep}&type=${dub ? "dub" : "sub"}` },
+   { name: "Server 2", getUrl: (m: number, ep: number, dub: boolean) => `https://megaplay.buzz/stream/mal/${m}/${ep}/${dub ? "dub" : "sub"}` },
+  { name: "Server 3", getUrl: (m: number, ep: number, dub: boolean) => `https://vidsrc-embed.ru/embed/anime?mal=${m}&episode=${ep}&type=${dub ? "dub" : "sub"}` },
 ];
 
 function StatBox({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
